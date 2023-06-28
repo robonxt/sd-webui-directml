@@ -378,7 +378,10 @@ def webui():
 
         if not cmd_opts.no_gradio_queue:
             shared.demo.queue(64)
-
+        else:
+            print('Server queues disabled')
+            shared.demo.progress_tracking = False
+            
         gradio_auth_creds = list(get_gradio_auth_creds()) or None
 
         # this restores the missing /docs endpoint
@@ -401,9 +404,14 @@ def webui():
             ssl_verify=cmd_opts.disable_tls_verify,
             debug=cmd_opts.gradio_debug,
             auth=gradio_auth_creds,
-            inbrowser=cmd_opts.autolaunch,
+            inbrowser=cmd_opts.autolaunch and os.getenv('SD_WEBUI_RESTARTING ') != '1',
             prevent_thread_lock=True,
             allowed_paths=cmd_opts.gradio_allowed_path,
+            favicon_path="favicon.ico",
+            app_kwargs={
+                "docs_url": "/docs",
+                "redoc_url": "/redoc",
+            },
         )
         if cmd_opts.add_stop_route:
             app.add_route("/_stop", stop_route, methods=["POST"])
