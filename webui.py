@@ -214,7 +214,7 @@ def configure_sigint_handler():
     # make the program just exit at ctrl+c without waiting for anything
     def sigint_handler(sig, frame):
         print(f'Interrupted with signal {sig} in {frame}')
-        os._exit(0)
+        sys.exit(0)
 
     if not os.environ.get("COVERAGE_RUN"):
         # Don't install the immediate-quit handler when running under coverage,
@@ -384,7 +384,10 @@ def webui():
 
         if not cmd_opts.no_gradio_queue:
             shared.demo.queue(64)
-
+        else:
+            print('Server queues disabled')
+            shared.demo.progress_tracking = False
+            
         gradio_auth_creds = list(get_gradio_auth_creds()) or None
 
         app, local_url, share_url = shared.demo.launch(
@@ -457,6 +460,7 @@ def webui():
             print("Stopping server...")
             # If we catch a keyboard interrupt, we want to stop the server and exit.
             shared.demo.close()
+            sys.exit(0)
             break
 
         print('Restarting UI...')
