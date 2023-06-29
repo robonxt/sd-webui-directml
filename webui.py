@@ -448,7 +448,7 @@ def webui():
 
         try:
             while True:
-                server_command = shared.state.wait_for_server_command(timeout=5)
+                server_command = shared.state.wait_for_server_command(timeout=3)
                 if server_command:
                     if server_command in ("stop", "restart"):
                         break
@@ -461,8 +461,8 @@ def webui():
         if server_command == "stop":
             print("Stopping server...")
             # If we catch a keyboard interrupt, we want to stop the server and exit.
+            # shared.demo.close()
             sys.exit(0)
-            shared.demo.close()
             break
         print('Restarting UI...')
         shared.demo.close()
