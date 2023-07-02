@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from modules.paths_internal import script_path
@@ -20,4 +21,4 @@ def restart_program() -> None:
 
 
 def stop_program() -> None:
-    os._exit(0)
+    sys.exit(0)
