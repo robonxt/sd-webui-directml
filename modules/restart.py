@@ -21,4 +21,4 @@ def restart_program() -> None:
 
 
 def stop_program() -> None:
-    sys.exit(0)
+    sys.exit()
