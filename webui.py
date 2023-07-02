@@ -406,7 +406,7 @@ def webui():
             inbrowser=cmd_opts.autolaunch and os.getenv('SD_WEBUI_RESTARTING ') != '1',
             prevent_thread_lock=True,
             allowed_paths=cmd_opts.gradio_allowed_path,
-            favicon_path="favicon.ico",
+            favicon_path="favicon.svg",
             app_kwargs={
                 "docs_url": "/docs",
                 "redoc_url": "/redoc",
