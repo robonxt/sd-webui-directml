@@ -234,6 +234,7 @@ def configure_opts_onchange():
 def initialize():
     fix_asyncio_event_loop_policy()
     validate_tls_options()
+    #configure_sigint_handler()
     check_versions()
     modelloader.cleanup_models()
     configure_opts_onchange()
@@ -461,7 +462,7 @@ def webui():
         if server_command == "stop":
             print("Stopping server...")
             # If we catch a keyboard interrupt, we want to stop the server and exit.
-            # shared.demo.close()
+            shared.demo.close()
             sys.exit(0)
             break
         print('Restarting UI...')
