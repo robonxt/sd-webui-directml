@@ -27,6 +27,8 @@
 [N]::Ra-Render,,"lowres, normal quality, worst quality, cropped, blurry, drawing, painting,"
 [N]::Thumbelina,,"(worst quality, low quality:1.4), (bad_prompt_version2:0.8), easynegative, badhandv4, text, name, letters, watermark,"
 [N]::YuzusoftStyle,,"(low quality:1.4), (worst quality:1.4), watermark, artist name, signature, letterboxedet, strabismus, pen, pencil, text, watermark, artist name, signature, letterboxed,"
+[N]::LigneClaireModel,,
+[N]::MuktsukiMix,,"double navel, dark mole, painting, sketches, (worst quality:2), (low quality:2), (normal quality:2), ((monochrome)), ((grayscale)), (missing fingers), skin spots, acnes, skin blemishes"
 [P]::aniflatmix,"([ligne claire|lineart|monochrome]),",
 [P]::Anime,"(((beautiful detailed eyes))), (((masterpiece))), (((proper body proportions))), (((ultra-detailed))), best quality, anime, cinematic lighting, depth of field, game cg, illustration,",
 [P]::AnythingV5V3,"official art, (((1girl))), simple background, [(white background:1.5)::0.2], cinematic lighting, (white background:1.2), illustration, ((full body)), proper body proportions, ",
