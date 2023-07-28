@@ -710,7 +710,6 @@ def read_info_from_image(image: Image.Image) -> tuple[str | None, dict]:
             geninfo = exif_comment
 
     for field in IGNORED_INFO_KEYS:
-    for field in IGNORED_INFO_KEYS:
         items.pop(field, None)
 
     if items.get("Software", None) == "NovelAI":
