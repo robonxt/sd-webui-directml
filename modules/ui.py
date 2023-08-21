@@ -1141,6 +1141,13 @@ def create_ui():
             with gr.Row().style(equal_height=False):
                 with gr.Column(variant='panel'):
                     with gr.Tabs(elem_id="olive_tabs"):
+                        def onchange(checked: bool):
+                            return (
+                                gr.Slider.update(visible=checked),
+                                gr.Slider.update(visible=not checked),
+                                gr.Slider.update(visible=not checked),
+                            )
+
                         with gr.Tab(label="Optimize checkpoint"):
                             olive_checkpoint = gr.Textbox(label='Checkpoint file name', value="", elem_id="olive_checkpoint", info="Your own checkpoint file name")
                             olive_ckpt_vae = gr.Textbox(label='VAE Source Model ID', value="", elem_id="olive_ckpt_vae", info="The VAE from this model will be used. (empty for default)")
@@ -1149,8 +1156,12 @@ def create_ui():
                             olive_ckpt_outdir = gr.Textbox(label='Output folder', value="stable-diffusion-v1-5", elem_id="olive_ckpt_outdir")
 
                             with gr.Column(elem_id="olive_ckpt_res"):
-                                olive_ckpt_sample_height = gr.Slider(minimum=256, maximum=2048, step=64, label="Height", value=512, elem_id="olive_ckpt_sample_height")
-                                olive_ckpt_sample_width = gr.Slider(minimum=256, maximum=2048, step=64, label="Width", value=512, elem_id="olive_ckpt_sample_width")
+                                olive_ckpt_sync_hw = gr.Checkbox(label='Sync height and width (RECOMMENDED)', value=True, elem_id="olive_ckpt_sync_hw")
+                                olive_ckpt_sample_size = gr.Slider(minimum=256, maximum=2048, step=64, label="Image Size", value=512, visible=olive_ckpt_sync_hw.value, elem_id="olive_onnx_sample_size")
+                                olive_ckpt_sample_height = gr.Slider(minimum=256, maximum=2048, step=64, label="Height", value=512, visible=not olive_ckpt_sync_hw.value, elem_id="olive_ckpt_sample_height")
+                                olive_ckpt_sample_width = gr.Slider(minimum=256, maximum=2048, step=64, label="Width", value=512, visible=not olive_ckpt_sync_hw.value, elem_id="olive_ckpt_sample_width")
+
+                                olive_ckpt_sync_hw.change(onchange, inputs=[olive_ckpt_sync_hw], outputs=[olive_ckpt_sample_size, olive_ckpt_sample_height, olive_ckpt_sample_width])
 
                             with FormRow(elem_id="olive_ckpt_submodels", elem_classes="checkboxes-row", variant="compact"):
                                 olive_ckpt_safety_checker = gr.Checkbox(label='Safety Checker', value=True, elem_id="olive_ckpt_safety_checker")
@@ -1174,8 +1185,12 @@ def create_ui():
                             olive_onnx_outdir = gr.Textbox(label='Output folder', value="stable-diffusion-v1-5", elem_id="olive_onnx_outdir")
 
                             with gr.Column(elem_id="olive_onnx_res"):
-                                olive_onnx_sample_height = gr.Slider(minimum=256, maximum=2048, step=64, label="Height", value=512, elem_id="olive_onnx_sample_height")
-                                olive_onnx_sample_width = gr.Slider(minimum=256, maximum=2048, step=64, label="Width", value=512, elem_id="olive_onnx_sample_width")
+                                olive_onnx_sync_hw = gr.Checkbox(label='Sync height and width (RECOMMENDED)', value=True, elem_id="olive_onnx_sync_hw")
+                                olive_onnx_sample_size = gr.Slider(minimum=256, maximum=2048, step=64, label="Image Size", value=512, visible=olive_onnx_sync_hw.value, elem_id="olive_onnx_sample_size")
+                                olive_onnx_sample_height = gr.Slider(minimum=256, maximum=2048, step=64, label="Height", value=512, visible=not olive_onnx_sync_hw.value, elem_id="olive_onnx_sample_height")
+                                olive_onnx_sample_width = gr.Slider(minimum=256, maximum=2048, step=64, label="Width", value=512, visible=not olive_onnx_sync_hw.value, elem_id="olive_onnx_sample_width")
+
+                                olive_onnx_sync_hw.change(onchange, inputs=[olive_onnx_sync_hw], outputs=[olive_onnx_sample_size, olive_onnx_sample_height, olive_onnx_sample_width])
 
                             with FormRow(elem_id="olive_onnx_submodels", elem_classes="checkboxes-row", variant="compact"):
                                 olive_onnx_safety_checker = gr.Checkbox(label='Safety Checker', value=True, elem_id="olive_onnx_safety_checker")
@@ -1202,7 +1217,7 @@ def create_ui():
                 inputs=[olive_checkpoint, olive_ckpt_vae, olive_ckpt_vae_subfolder, olive_ckpt_source_dir, olive_ckpt_outdir,
                     olive_ckpt_safety_checker, olive_ckpt_text_encoder, olive_ckpt_text_encoder_2, olive_ckpt_unet, olive_ckpt_vae_decoder, olive_ckpt_vae_encoder,
                     olive_ckpt_sampling_method, olive_ckpt_use_fp16,
-                    olive_ckpt_sample_height, olive_ckpt_sample_width,
+                    olive_ckpt_sample_size if olive_ckpt_sync_hw else (olive_ckpt_sample_height, olive_ckpt_sample_width),
                     olive_merge_lora, *olive_merge_lora_inputs,
                 ],
                 outputs=[],
@@ -1213,7 +1228,7 @@ def create_ui():
                 inputs=[olive_onnx_model_id, olive_onnx_vae, olive_onnx_vae_subfolder, olive_onnx_indir, olive_onnx_outdir,
                     olive_onnx_safety_checker, olive_onnx_text_encoder, olive_onnx_text_encoder_2, olive_onnx_unet, olive_onnx_vae_decoder, olive_onnx_vae_encoder,
                     olive_onnx_use_fp16,
-                    olive_onnx_sample_height, olive_onnx_sample_width,
+                    olive_onnx_sample_size if olive_onnx_sync_hw else (olive_onnx_sample_height, olive_onnx_sample_width),
                     olive_merge_lora, *olive_merge_lora_inputs,
                 ],
                 outputs=[],

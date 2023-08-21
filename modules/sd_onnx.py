@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import inspect
 import diffusers
+from abc import ABCMeta, abstractmethod
+from typing import TypeVar, Generic
 from pathlib import Path
 import onnxruntime as ort
 from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
@@ -167,11 +169,14 @@ def __call__(
     return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 diffusers.OnnxStableDiffusionPipeline.__call__ = __call__
 
-class SdONNXModel:
+T = TypeVar("T")
+class BaseONNXModel(Generic[T], metaclass=ABCMeta):
+    _sess_options: ort.SessionOptions
+
     dirname: str
+    is_sdxl: bool = False
     is_optimized: bool
     path: Path
-    sess_options: ort.SessionOptions
     sd_model_hash: None = None
     cond_stage_model: torch.nn.Module = torch.nn.Module()
     cond_stage_key: str = ""
@@ -184,12 +189,9 @@ class SdONNXModel:
         self.dirname = dirname
         self.is_optimized = is_optimized
         self.path = Path(models_path) / ("ONNX-Olive" if self.is_optimized else "ONNX") / dirname
-        self.sess_options = ort.SessionOptions()
-        self.sess_options.add_free_dimension_override_by_name("unet_sample_channels", 4)
-        self.sess_options.add_free_dimension_override_by_name("unet_time_batch", 1)
-        self.sess_options.add_free_dimension_override_by_name("unet_hidden_sequence", 77)
-    
-    def to(self, *args, **kwargs) -> diffusers.OnnxStableDiffusionPipeline:
+        self._sess_options = ort.SessionOptions()
+
+    def to(self, *args, **kwargs):
         for arg in args:
             if isinstance(arg, torch.dtype):
                 self.dtype = arg
@@ -202,22 +204,24 @@ class SdONNXModel:
             if key == "device":
                 self.device = kwargs[key]
 
-    def create_pipeline(self, sampler: SamplerData) -> diffusers.OnnxStableDiffusionPipeline:
-        provider_options = dict()
-        provider_options["device_id"] = self.device.index
-        return diffusers.OnnxStableDiffusionPipeline.from_pretrained(
-            self.path,
-            provider=("DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider", provider_options),
-            scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
-            sess_options=self.sess_options,
-            local_files_only=True,
-            torch_dtype=self.dtype,
-            offload_state_dict=shared.opts.offload_state_dict,
-        )
+        return self
+
+    def add_free_dimension_override_by_name(self, *args, **kwargs):
+        return self._sess_options.add_free_dimension_override_by_name(*args, **kwargs)
+
+    def set_mem_pattern(self, enabled: bool):
+        self._sess_options.enable_mem_pattern = enabled
+
+    def set_mem_reuse(self, enabled: bool):
+        self._sess_options.enable_mem_reuse = enabled
+
+    @abstractmethod
+    def create_pipeline(self, sampler: SamplerData) -> T:
+        pass
 
 class SdONNXProcessingTxt2Img:
-    sd_model: SdONNXModel
-    pipeline: diffusers.OnnxStableDiffusionPipeline
+    sd_model: BaseONNXModel[diffusers.DiffusionPipeline]
+    pipeline: diffusers.DiffusionPipeline
     outpath_samples: str
     outpath_grids: str
     prompt: str
@@ -242,8 +246,8 @@ class SdONNXProcessingTxt2Img:
     do_not_save_grid: bool
     extra_generation_params: dict
 
-    def __init__(self, sd_model: SdONNXModel, outpath_samples = None, outpath_grids = None, prompt: str = "", styles = None, seed: int = -1, subseed: int = -1, subseed_strength: float = 0, seed_resize_from_h: int = -1, seed_resize_from_w: int = -1, seed_enable_extras: bool = True, sampler_name: str = None, batch_size: int = 1, n_iter: int = 1, steps: int = 50, cfg_scale: float = 7.0, width: int = 512, height: int = 512, restore_faces: bool = False, tiling: bool = False, do_not_save_samples: bool = False, do_not_save_grid: bool = False, extra_generation_params = None, overlay_images = None, negative_prompt: str = None, eta: float = None, do_not_reload_embeddings: bool = False, ddim_discretize: str = None, s_min_uncond: float = 0.0, s_churn: float = 0.0, s_tmax: float = None, s_tmin: float = 0.0, s_noise: float = 1.0, override_settings = None, override_settings_restore_afterwards: bool = True, sampler_index: int = None, script_args: list = None, enable_hr: bool = False, denoising_strength: float = 0.75, firstphase_width: int = 0, firstphase_height: int = 0, hr_scale: float = 2.0, hr_upscaler: str = None, hr_second_pass_steps: int = 0, hr_resize_x: int = 0, hr_resize_y: int = 0, hr_sampler_name: str = None, hr_prompt: str = '', hr_negative_prompt: str = ''):
-        self.sd_model: SdONNXModel = sd_model
+    def __init__(self, sd_model: BaseONNXModel[diffusers.DiffusionPipeline], outpath_samples = None, outpath_grids = None, prompt: str = "", styles = None, seed: int = -1, subseed: int = -1, subseed_strength: float = 0, seed_resize_from_h: int = -1, seed_resize_from_w: int = -1, seed_enable_extras: bool = True, sampler_name: str = None, batch_size: int = 1, n_iter: int = 1, steps: int = 50, cfg_scale: float = 7.0, width: int = 512, height: int = 512, restore_faces: bool = False, tiling: bool = False, do_not_save_samples: bool = False, do_not_save_grid: bool = False, extra_generation_params = None, overlay_images = None, negative_prompt: str = None, eta: float = None, do_not_reload_embeddings: bool = False, ddim_discretize: str = None, s_min_uncond: float = 0.0, s_churn: float = 0.0, s_tmax: float = None, s_tmin: float = 0.0, s_noise: float = 1.0, override_settings = None, override_settings_restore_afterwards: bool = True, sampler_index: int = None, script_args: list = None, enable_hr: bool = False, denoising_strength: float = 0.75, firstphase_width: int = 0, firstphase_height: int = 0, hr_scale: float = 2.0, hr_upscaler: str = None, hr_second_pass_steps: int = 0, hr_resize_x: int = 0, hr_resize_y: int = 0, hr_sampler_name: str = None, hr_prompt: str = '', hr_negative_prompt: str = ''):
+        self.sd_model: BaseONNXModel[diffusers.DiffusionPipeline] = sd_model
         self.outpath_samples: str = outpath_samples
         self.outpath_grids: str = outpath_grids
         self.prompt: str = prompt
@@ -364,10 +368,14 @@ class SdONNXProcessingTxt2Img:
         self.hr_c = None
         self.hr_uc = None
 
-        self.sd_model.sess_options.enable_mem_pattern = shared.opts.enable_mem_pattern
-        self.sd_model.sess_options.enable_mem_reuse = shared.opts.enable_mem_reuse
-        self.sd_model.sess_options.add_free_dimension_override_by_name("unet_sample_batch", self.batch_size * 2)
-        self.sd_model.sess_options.add_free_dimension_override_by_name("unet_hidden_batch", self.batch_size * 2)
+        self.sd_model.set_mem_pattern(shared.opts.enable_mem_pattern)
+        self.sd_model.set_mem_reuse(shared.opts.enable_mem_reuse)
+        self.sd_model.add_free_dimension_override_by_name("unet_sample_batch", self.batch_size * 2)
+        self.sd_model.add_free_dimension_override_by_name("unet_hidden_batch", self.batch_size * 2)
+        if self.sd_model.is_sdxl:
+            self.sd_model.add_free_dimension_override_by_name("unet_text_embeds_batch", self.batch_size * 2)
+            self.sd_model.add_free_dimension_override_by_name("unet_text_embeds_size", self.height + 256)
+            self.sd_model.add_free_dimension_override_by_name("unet_time_ids_batch", self.batch_size * 2)
         if not shared.opts.reload_model_before_each_generation:
             self.pipeline = self.sd_model.create_pipeline(self.sampler)
 
