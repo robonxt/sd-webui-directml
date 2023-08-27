@@ -1,3 +1,4 @@
 torch==1.13.1
 torchvision==0.14.1
+torch-directml==0.1.13.1.dev230413
 protobuf==3.20.3
