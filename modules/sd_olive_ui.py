@@ -32,6 +32,8 @@ def optimize_from_ckpt(checkpoint: str, vae_id: str, vae_subfolder: str, unoptim
 
     optimize(unoptimized_dir, optimized_dir, pipeline, vae_id, vae_subfolder, safety_checker, text_encoder, text_encoder_2, unet, vae_decoder, vae_encoder, use_fp16, sample_size if hw_synced else sample_size[0], sample_size if hw_synced else sample_size[1], olive_merge_lora, *olive_merge_lora_inputs)
 
+    return ["Optimization complete."]
+
 def optimize_from_onnx(model_id: str, vae_id: str, vae_subfolder: str, unoptimized_dir: str, optimized_dir: str, safety_checker: bool, text_encoder: bool, text_encoder_2: bool, unet: bool, vae_decoder: bool, vae_encoder: bool, use_fp16: bool, sample_size: Union[tuple[int, int], int], olive_merge_lora: bool, *olive_merge_lora_inputs):
     unload_model_weights()
 
@@ -51,6 +53,8 @@ def optimize_from_onnx(model_id: str, vae_id: str, vae_subfolder: str, unoptimiz
     hw_synced = isinstance(sample_size, int)
 
     optimize(unoptimized_dir, optimized_dir, pipeline, vae_id, vae_subfolder, safety_checker, text_encoder, text_encoder_2, unet, vae_decoder, vae_encoder, use_fp16, sample_size if hw_synced else sample_size[0], sample_size if hw_synced else sample_size[1], olive_merge_lora, *olive_merge_lora_inputs)
+
+    return ["Optimization complete."]
 
 def optimize(unoptimized_dir: Path, optimized_dir: Path, pipeline, vae_id: str, vae_subfolder: str, safety_checker: bool, text_encoder: bool, text_encoder_2: bool, unet: bool, vae_decoder: bool, vae_encoder: bool, use_fp16: bool, sample_height: int, sample_width: int, olive_merge_lora: bool, *olive_merge_lora_inputs):
     model_info = {}

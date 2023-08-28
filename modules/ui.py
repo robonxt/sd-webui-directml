@@ -1135,6 +1135,38 @@ def create_ui():
                 with gr.Group(elem_id="modelmerger_results_panel"):
                     modelmerger_result = gr.HTML(elem_id="modelmerger_result", show_label=False)
 
+    if shared.cmd_opts.onnx:
+        from modules.sd_onnx import save_device_map
+        with gr.Blocks(analytics_enabled=False) as onnx_interface:
+            gr.HTML("<h1>Advanced ONNX configuration</h1>")
+
+            with gr.Column(elem_id="onnx_device_map"):
+                onnx_ep_text_encoder = gr.Textbox(label='Execution Provider for Text Encoder', value="DmlExecutionProvider", elem_id="onnx_ep_text_encoder")
+                onnx_id_text_encoder = gr.Textbox(label='Device ID for Text Encoder', value=(shared.cmd_opts.device_id or 0), elem_id="onnx_id_text_encoder")
+                onnx_ep_text_encoder_2 = gr.Textbox(label='Execution Provider for Text Encoder 2', value="DmlExecutionProvider", elem_id="onnx_ep_text_encoder_2")
+                onnx_id_text_encoder_2 = gr.Textbox(label='Device ID for Text Encoder 2', value=(shared.cmd_opts.device_id or 0), elem_id="onnx_id_text_encoder_2")
+                onnx_ep_unet = gr.Textbox(label='Execution Provider for UNet', value="DmlExecutionProvider", elem_id="onnx_ep_unet")
+                onnx_id_unet = gr.Textbox(label='Device ID for UNet', value=(shared.cmd_opts.device_id or 0), elem_id="onnx_id_unet")
+                onnx_ep_vae_decoder = gr.Textbox(label='Execution Provider for VAE Decoder', value="DmlExecutionProvider", elem_id="onnx_ep_vae_decoder")
+                onnx_id_vae_decoder = gr.Textbox(label='Device ID for VAE Decoder', value=(shared.cmd_opts.device_id or 0), elem_id="onnx_id_vae_decoder")
+                onnx_ep_vae_encoder = gr.Textbox(label='Execution Provider for VAE Encoder', value="DmlExecutionProvider", elem_id="onnx_ep_vae_encoder")
+                onnx_id_vae_encoder = gr.Textbox(label='Device ID for VAE Encoder', value=(shared.cmd_opts.device_id or 0), elem_id="onnx_id_vae_encoder")
+
+            button_onnx_device_map = gr.Button(value="Apply", variant='primary', elem_id="button_onnx_device_map")
+            onnx_html = gr.HTML("")
+
+            button_onnx_device_map.click(
+                wrap_gradio_gpu_call(save_device_map, extra_outputs=[""]),
+                inputs=[
+                    onnx_ep_text_encoder, onnx_id_text_encoder,
+                    onnx_ep_text_encoder_2, onnx_id_text_encoder_2,
+                    onnx_ep_unet, onnx_id_unet,
+                    onnx_ep_vae_decoder, onnx_id_vae_decoder,
+                    onnx_ep_vae_encoder, onnx_id_vae_encoder,
+                ],
+                outputs=[onnx_html],
+            )
+
     if shared.cmd_opts.olive:
         from modules.sd_olive_ui import optimize_from_ckpt, optimize_from_onnx, available_sampling_methods
         with gr.Blocks(analytics_enabled=False) as olive_interface:
@@ -1176,9 +1208,10 @@ def create_ui():
                                 olive_ckpt_use_fp16 = gr.Checkbox(label='Use half floats', value=True, elem_id="olive_ckpt_use_fp16")
 
                             button_olive_from_ckpt = gr.Button(value="Convert & Optimize checkpoint using Olive", variant='primary', elem_id="olive_optimize_from_ckpt")
+                            olive_html_from_ckpt = gr.HTML("")
 
                         with gr.Tab(label="Optimize ONNX model"):
-                            olive_onnx_model_id = gr.Textbox(label='ONNX Model ID', value="stable-diffusion-v1-5", elem_id="olive_onnx_model_id")
+                            olive_onnx_model_id = gr.Textbox(label='ONNX Model ID', value="runwayml/stable-diffusion-v1-5", elem_id="olive_onnx_model_id")
                             olive_onnx_vae = gr.Textbox(label='VAE Source Model ID', value="", elem_id="olive_onnx_vae", info="The VAE from this model will be used. (empty for default)")
                             olive_onnx_vae_subfolder = gr.Textbox(label='VAE Source Subfolder', value="vae", elem_id="olive_ckpt_vae_subfolder", info="The name of directory which has config and binary of the VAE. (empty for root)")
                             olive_onnx_indir = gr.Textbox(label='Input folder', value="stable-diffusion-v1-5", elem_id="olive_onnx_indir", info="If this folder exists, Olive will load and optimize model from it. Otherwise, download and optimize model on it.")
@@ -1204,6 +1237,7 @@ def create_ui():
                                 olive_onnx_use_fp16 = gr.Checkbox(label='Use half floats', value=True, elem_id="olive_onnx_use_fp16")
 
                             button_olive_from_onnx = gr.Button(value="Download & Optimize ONNX model using Olive", variant='primary', elem_id="olive_optimize_from_onnx")
+                            olive_html_from_onnx = gr.HTML("")
 
                         with gr.Tab(label="Merge Extra Networks"):
                             olive_merge_lora = gr.Checkbox(label='Merge LoRA', value=False, elem_id="olive_merge_lora")
@@ -1220,7 +1254,7 @@ def create_ui():
                     olive_ckpt_sample_size if olive_ckpt_sync_hw else (olive_ckpt_sample_height, olive_ckpt_sample_width),
                     olive_merge_lora, *olive_merge_lora_inputs,
                 ],
-                outputs=[],
+                outputs=[olive_html_from_ckpt],
             )
 
             button_olive_from_onnx.click(
@@ -1231,7 +1265,7 @@ def create_ui():
                     olive_onnx_sample_size if olive_onnx_sync_hw else (olive_onnx_sample_height, olive_onnx_sample_width),
                     olive_merge_lora, *olive_merge_lora_inputs,
                 ],
-                outputs=[],
+                outputs=[olive_html_from_onnx],
             )
 
     with gr.Blocks(analytics_enabled=False) as train_interface:
@@ -1565,6 +1599,9 @@ def create_ui():
         (modelmerger_interface, "Checkpoint Merger", "modelmerger"),
         (train_interface, "Train", "train"),
     ]
+
+    if cmd_opts.onnx:
+        interfaces += [(onnx_interface, "ONNX", "onnx")]
 
     if cmd_opts.olive:
         interfaces += [(olive_interface, "Olive", "olive")]

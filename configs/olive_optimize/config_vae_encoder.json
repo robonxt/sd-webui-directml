@@ -53,6 +53,7 @@
     },
     "optimize": {
       "type": "OrtTransformersOptimization",
+      "disable_search": true,
       "config": {
         "model_type": "vae",
         "float16": true,
