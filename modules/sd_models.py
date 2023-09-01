@@ -474,7 +474,8 @@ def load_onnx_model(checkpoint_info: CheckpointInfo, already_loaded_state_dict=N
 
 
 def is_sdxl(checkpoint_info: CheckpointInfo) -> bool:
-    return os.path.isdir(checkpoint_info.filename) and os.path.isdir(os.path.join(checkpoint_info.filename, "text_encoder_2"))
+    path = os.path.join(onnx_model_path, checkpoint_info.filename)
+    return os.path.isdir(path) and os.path.isdir(os.path.join(path, "text_encoder_2"))
 
 
 def get_empty_cond(sd_model):
